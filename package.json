@@ -1,0 +1,15 @@
+{
+  "name": "chua-online-server",
+  "version": "1.0.0",
+  "description": "Server điều khiển và kết nối TikTok Live cho Chùa Online",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "tiktok-live-connector": "^2.3.0-beta1",
+    "ws": "^8.17.0"
+  }
+}

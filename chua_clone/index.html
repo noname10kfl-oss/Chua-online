@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta name="sn-khung-canh" content="chua-online">
+  <meta name="sn-khung-canh-ten" content="Chùa Online">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Chùa Online</title>
+
+  <!--
+    Trang phục vụ ở `/s/<mã>` chứ không ở gốc, nên đường dẫn tương đối sẽ ghép
+    thành `/s/san/…` và trượt hết. Khai gốc "/" một lần ở đây — cùng khuôn với
+    `ai-biet-nhieu-hon.html`.
+
+    ⚠ Chữ viết thẳng trong trang này KHÔNG được có "quà"/"tặng" hay từ cùng
+    nghĩa: phép canh `khong-chu-qua-tren-man.test.js` chỉ đọc `src/`.
+  -->
+  <base href="/" />
+
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32.png" />
+
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="/assets/vendor/fonts/be-vietnam-pro-vietnamese-900-normal.woff2">
+  <link rel="preload" as="image" href="/assets/chua-online/nen-chua.jpg">
+
+  <style>
+    :root { color-scheme: dark; }
+
+    @font-face {
+      font-family: "Be Vietnam Pro";
+      font-style: normal;
+      font-weight: 900;
+      font-display: swap;
+      src: url("/assets/vendor/fonts/be-vietnam-pro-vietnamese-900-normal.woff2") format("woff2"),
+           url("/assets/vendor/fonts/be-vietnam-pro-latin-900-normal.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "Be Vietnam Pro";
+      font-style: normal;
+      font-weight: 400 700;
+      font-display: swap;
+      src: url("/assets/vendor/fonts/be-vietnam-pro-vietnamese-400-normal.woff2") format("woff2"),
+           url("/assets/vendor/fonts/be-vietnam-pro-latin-400-normal.woff2") format("woff2");
+    }
+
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      overflow: hidden;
+      background: #120806;
+      user-select: none; -webkit-user-select: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    body { font-family: "Be Vietnam Pro", system-ui, "Segoe UI", sans-serif; color: #fff; }
+
+    img, canvas {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: high-quality;
+    }
+
+    #man { display: block; width: 100vw; height: 100vh; image-rendering: high-quality; }
+
+    /* Lớp phủ trạng thái phiên — xem `NHAN_PHIEN` trong src/chuaOnline/main.js. */
+    #session-notice {
+      position: fixed; inset: 0;
+      display: grid; place-items: center;
+      background: rgba(18, 8, 4, 0.88);
+      z-index: 20;
+    }
+    #session-notice[hidden] { display: none; }
+    .notice-title {
+      font-size: clamp(28px, 6vw, 76px);
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      line-height: 1.34;
+      color: rgba(255, 240, 210, 0.92);
+      text-align: center;
+      padding: 0 24px;
+    }
+
+    /* Câu hâm nóng — LỜI DẪN, không phải thông báo kỹ thuật. */
+    #live-wait {
+      position: fixed; left: 50%; top: 46%;
+      transform: translate(-50%, -50%);
+      width: min(92vw, 900px);
+      text-align: center;
+      font-size: clamp(22px, 4.4vw, 54px);
+      font-weight: 900;
+      line-height: 1.35;
+      color: rgba(255, 240, 210, 0.95);
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.85);
+      opacity: 0;
+      transition: opacity 600ms ease;
+      pointer-events: none;
+      z-index: 15;
+    }
+    #live-wait.hien { opacity: 1; }
+
+    /* ─── Mode Hành lễ ────────────────────────────────────────────────────────
+       Chép NGUYÊN từ `styles.css` của game gốc (G:\projects\chua_online, khối
+       "Overlay" + "Offering mode"), chỉ đổi đường dẫn ảnh sang assets/chua-online/
+       và gói dưới #hanh-le cho khỏi đụng mode Vườn sen. Phần thêm theo luật chủ
+       sàn (đi vào chỗ, 6 chỗ danh dự, bong bóng chat, dải đáy) đánh dấu "THÊM". */
+    #hanh-le { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; overflow: hidden; background: #0e0b0a; color: #f8efe3; }
+    #hanh-le[hidden] { display: none; }
+    #hanh-le * { box-sizing: border-box; }
+    #hanh-le .overlay-stage { position: relative; width: min(100vw, 56.25vh); height: min(177.777vw, 100vh); aspect-ratio: 9 / 16; overflow: hidden; isolation: isolate; background: #120a07; color: #fff8e8; font-size: clamp(7px, 1.05vh, 17px); font-family: "Be Vietnam Pro", system-ui, sans-serif; }
+    #hanh-le .offering-temple-backdrop { position: absolute; inset: 0; z-index: -5; background: #2a0d06 url('/assets/chua-online/hanh-le/temple-hall.png') center / cover no-repeat; transform: scale(1.012); animation: hl-temple-breathe 14s ease-in-out infinite alternate; }
+    #hanh-le .vignette { position: absolute; inset: 0; z-index: -3; pointer-events: none; background: linear-gradient(180deg, #150603a3 0%, transparent 18%, transparent 71%, #100402ba 100%), radial-gradient(ellipse at 50% 55%, transparent 30%, #1b08043f 76%, #080201b8 100%); }
+    #hanh-le .incense { position: absolute; z-index: 1; bottom: 37%; width: 18%; height: 35%; opacity: .14; filter: blur(18px); background: radial-gradient(ellipse, #fff7d2a8, transparent 65%); animation: hl-smoke-drift 7s ease-in-out infinite alternate; }
+    #hanh-le .incense--left { left: 6%; }
+    #hanh-le .incense--right { right: 6%; animation-delay: -3s; }
+    #hanh-le .ambient-dust { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+    #hanh-le .ambient-dust i { position: absolute; top: 15%; width: 3px; height: 3px; border-radius: 50%; background: #ffd978; box-shadow: 0 0 8px #ffd978; animation: hl-dust-rise 10s ease-in-out infinite; }
+    #hanh-le .overlay-header { position: absolute; z-index: 15; top: 2.2%; left: 4%; right: 4%; display: flex; justify-content: space-between; align-items: center; }
+    #hanh-le .live-brand { display: flex; align-items: center; gap: .65em; }
+    #hanh-le .live-brand__lotus { width: 2.35em; height: 2.35em; border: 1px solid #e8b85d80; border-radius: 50%; display: grid; place-items: center; background: #2a110dbd; color: #ffe1a0; box-shadow: 0 0 18px #ffc35b38; }
+    #hanh-le .live-brand div { display: flex; flex-direction: column; gap: .1em; }
+    #hanh-le .live-brand small { font-size: .65em; letter-spacing: .16em; color: #c9b899; }
+    #hanh-le .live-brand strong { font-family: Marcellus, "Be Vietnam Pro", serif; font-size: 1.14em; letter-spacing: .1em; color: #f8d78d; }
+    #hanh-le .connection-pill { display: flex; align-items: center; gap: .55em; padding: .55em .8em; border-radius: 99px; background: #130c0aab; border: 1px solid #dfb66f5c; backdrop-filter: blur(12px); font-size: .69em; font-weight: 700; letter-spacing: .08em; }
+    #hanh-le .connection-pill > span { width: .55em; height: .55em; border-radius: 50%; background: #b69f7b; }
+    #hanh-le .connection-pill--live > span { background: #57dd94; box-shadow: 0 0 8px #57dd94; }
+    #hanh-le .mantra-ribbon { position: absolute; z-index: 12; top: 7.4%; left: 4%; right: 4%; display: flex; justify-content: center; align-items: center; gap: .8em; padding: .5em 1em; color: #e9c979; background: linear-gradient(90deg, transparent, #32140ed9 10%, #32140ed9 90%, transparent); border-top: 1px solid #d7a14d28; border-bottom: 1px solid #d7a14d28; letter-spacing: .13em; font-size: .68em; white-space: nowrap; }
+    #hanh-le .mantra-ribbon span { color: #fff0b5; }
+    #hanh-le .offering-mode { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+    #hanh-le .offering-mode__altar-caption { position: absolute; top: 12.2%; left: 3.5%; width: 30%; display: flex; flex-direction: column; gap: .18em; padding: .75em .85em; border: 1px solid #f2bd596b; border-radius: .8em; background: linear-gradient(145deg, #35130ddd, #120806e8); box-shadow: 0 .7em 2em #0008, inset 0 1px #fff2; backdrop-filter: blur(.5em); }
+    #hanh-le .offering-mode__altar-caption small { color: #c59c63; font-size: .46em; letter-spacing: .14em; }
+    #hanh-le .offering-mode__altar-caption strong { color: #ffdc8c; font-family: Marcellus, "Be Vietnam Pro", serif; font-size: .72em; letter-spacing: .08em; }
+    #hanh-le .offering-mode__altar-caption span { color: #cdbba9; font-size: .42em; line-height: 1.35; }
+    #hanh-le .interactive-congregation { position: absolute; inset: 0; }
+    /* Người ngồi — `SeatedDevotee` bản gốc (31/10): ô 11.5em neo CHÂN tại (x, y), bốn
+       khung vái lạy luân phiên 8 giây; thẻ tên đè ngang thân dưới. */
+    #hanh-le .seated-devotee { position: absolute; z-index: 12; left: var(--devotee-x); top: var(--devotee-y); width: calc(11.5em * var(--hl-co-ngoi, 1)); height: calc(11.5em * var(--hl-co-ngoi, 1)); translate: -50% -100%; transition: opacity .5s ease; --devotee-scale: 1; }
+    #hanh-le .seated-devotee__scaled { position: absolute; inset: 0; transform-origin: center bottom; }
+    #hanh-le .seated-devotee__bow { position: absolute; inset: 0; }
+    #hanh-le .seated-devotee__frame { position: absolute; z-index: 1; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; filter: drop-shadow(0 .6em .5em #000a) saturate(.83) brightness(.92); animation: 8s linear var(--devotee-bow-delay) infinite; }
+    #hanh-le .seated-devotee__frame--1 { animation-name: hl-bow-frame-1; }
+    #hanh-le .seated-devotee__frame--2 { animation-name: hl-bow-frame-2; }
+    #hanh-le .seated-devotee__frame--3 { animation-name: hl-bow-frame-3; }
+    #hanh-le .seated-devotee__frame--4 { animation-name: hl-bow-frame-4; }
+    #hanh-le .devotee-nameplate { position: absolute; z-index: 8; left: 50%; bottom: .2em; translate: -50% 0; width: 6.7em; padding: .18em .3em .22em; border: 1px solid color-mix(in srgb, var(--heart-color) 42%, #80614c); border-radius: .28em; background: #090707e8; box-shadow: 0 .2em .45em #000d; }
+    #hanh-le .devotee-nameplate__avatar { position: absolute; z-index: 2; top: 50%; left: -1.55em; translate: 0 -50%; width: 2.1em; height: 2.1em; border-radius: 50%; filter: drop-shadow(0 .15em .22em #000c); }
+    #hanh-le .devotee-nameplate__avatar img,
+    #hanh-le .devotee-nameplate__avatar > span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #ffe09b; background: linear-gradient(145deg, #80412d, #291513); color: #fff7e9; font-weight: 700; font-size: .8em; }
+    #hanh-le .devotee-nameplate__copy { min-width: 0; }
+    #hanh-le .devotee-nameplate strong { display: block; overflow: hidden; color: #fff1dc; font-size: .84em; line-height: 1.12; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+    #hanh-le .devotee-heartbar { display: grid; grid-template-columns: .9em 1fr 1.22em; gap: .13em; align-items: center; margin-top: .1em; }
+    #hanh-le .devotee-heartbar > span { color: #ff536e; font-size: .8em; text-shadow: 0 0 .3em #ff244f; }
+    #hanh-le .devotee-heartbar > i { height: .28em; overflow: hidden; border: 1px solid #ffffff24; border-radius: 99px; background: #080403c7; box-shadow: inset 0 1px .2em #000b; }
+    #hanh-le .devotee-heartbar > i > b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ff486c, color-mix(in srgb, var(--heart-color) 70%, #ffd26e)); box-shadow: 0 0 .45em #ff4269; transition: width .55s ease; }
+    #hanh-le .devotee-heartbar > em { color: #f7cbd0; font-size: .55em; font-style: normal; text-align: right; }
+    #hanh-le .devotee-nameplate--featured { width: 7.4em; border-color: #ffd36e8a; box-shadow: 0 .25em .65em #000c, 0 0 .45em #f0aa3928; }
+    #hanh-le .offering-procession__figure { position: absolute; inset: 0; display: block; width: 100%; filter: saturate(.78) brightness(.86) drop-shadow(0 .65em .55em #000a); opacity: .94; transform-origin: center bottom; }
+    #hanh-le .offering-procession__actor { position: absolute; inset: 0; transform-origin: center bottom; }
+    #hanh-le .offering-procession__bow { position: absolute; inset: 0; }
+    #hanh-le .offering-procession__bow-frame { position: absolute; inset: 0; display: block; width: 100%; opacity: 0; filter: saturate(.78) brightness(.86) drop-shadow(0 .65em .55em #000a); }
+    #hanh-le .offering-procession__mon { position: absolute; left: 50%; bottom: -1.45em; translate: -50% 0; min-width: 11em; padding: .45em .75em; border: 1px solid #e7b15775; border-radius: 99px; color: #ffe0a0; background: #23100ce8; box-shadow: 0 .4em 1em #000a; font-size: .57em; font-weight: 700; text-align: center; white-space: nowrap; }
+
+    /* THÊM — người đi bộ (vào chỗ, lên thắp hương, về chỗ). Cùng khung 9em và ảnh
+       động của `.offering-procession` gốc; vị trí do JS dời bằng transition. */
+    #hanh-le .hl-walker { position: absolute; z-index: 40; width: calc(11.5em * var(--hl-co-di, 1)); height: calc(11.5em * var(--hl-co-di, 1)); transform-origin: center bottom; transition-property: left, top, transform; transition-timing-function: linear; }
+    /* Ở chỗ vái: đứng 0,4 s → 6 khung vái × 3 lượt (mỗi lượt 1,98 s) → đứng 0,5 s.
+       Cùng nhịp `ritual-*-visible` / `ritual-offering-bow-frame-*` của bản gốc, cắt
+       riêng đoạn đứng yên trước điện (6,84 s). */
+    #hanh-le .hl-walker--vai .hl-dung { animation: hl-dung-vai 6.84s step-end both; }
+    #hanh-le .hl-walker--vai .offering-procession__bow { animation: hl-vai-hien 6.84s step-end both; }
+    #hanh-le .offering-procession__bow-frame--1 { animation: hl-vai-1 1.98s .4s step-end 3 both; }
+    #hanh-le .offering-procession__bow-frame--2 { animation: hl-vai-2 1.98s .4s step-end 3 both; }
+    #hanh-le .offering-procession__bow-frame--3 { animation: hl-vai-3 1.98s .4s step-end 3 both; }
+    #hanh-le .offering-procession__bow-frame--4 { animation: hl-vai-4 1.98s .4s step-end 3 both; }
+    #hanh-le .offering-procession__bow-frame--5 { animation: hl-vai-5 1.98s .4s step-end 3 both; }
+    #hanh-le .offering-procession__bow-frame--6 { animation: hl-vai-6 1.98s .4s step-end 3 both; }
+    #hanh-le .hl-hang { display: inline-grid; place-items: center; width: 1.25em; height: 1.25em; margin-right: .25em; border-radius: 50%; color: #2a1408; background: #f3c96e; font-size: .9em; font-weight: 800; vertical-align: .05em; }
+    /* THÊM — bong bóng chat. Cỡ chữ chia cho tỉ lệ ngồi để hàng sau vẫn đọc được. */
+    /* Chủ sàn chốt 31/10: bong bóng to hơn cho khán giả đọc rõ (≈1,7 lần bản đầu). */
+    #hanh-le .hl-bong { position: absolute; z-index: 30; left: 50%; top: 27%; translate: -50% -100%; width: max-content; max-width: calc(9.5em / var(--devotee-scale, 1)); padding: .4em .65em; border: 1px solid #f3ddbc55; border-radius: .45em; color: #fff; background: #1a120ef0; box-shadow: 0 .3em .8em #000c; font-size: calc(1.6em / var(--devotee-scale, 1)); font-weight: 600; line-height: 1.28; text-align: center; overflow-wrap: anywhere; animation: hl-bong-in .25s ease-out both; }
+    /* Người đang có bong bóng nổi lên trên các hàng phía trước, không thì bong bóng bị che. */
+    #hanh-le .seated-devotee.co-bong { z-index: 2000 !important; }
+    #hanh-le .hl-walker .hl-bong { top: 4%; }
+    #hanh-le .hl-bong.tat { opacity: 0; transition: opacity .6s ease; }
+    /* Dải đáy — `.merit-dock` của bản gốc (ảnh mẫu 28). Bản gốc đặt chữ theo cỡ khung
+       nhỏ; ở khung 1080×1920 chữ chỉ còn ~10 px, nên cả dải phóng `font-size` cho
+       khớp tỉ lệ ảnh mẫu — mọi số đo bên trong giữ nguyên `em` của bản gốc. */
+    #hanh-le .merit-dock { position: absolute; z-index: 90; left: 2.1%; right: 2.1%; bottom: 1.15%; height: 8.65%; display: grid; grid-template-columns: minmax(0, 2.35fr) minmax(0, 1fr); gap: .62em; padding: .45em; border: 1px solid #b88a427d; border-radius: .42em; color: #e5c999; background: linear-gradient(180deg, #21130fe8, #100a08f2); box-shadow: 0 -.25em 1.15em #000a, inset 0 1px #f4cc7c1f; backdrop-filter: blur(.45em); pointer-events: none; font-size: 1.9em; }
+    #hanh-le .merit-dock::before, #hanh-le .merit-dock::after { content: ""; position: absolute; top: -.28em; width: 18%; height: .5em; border: 1px solid #9c743653; border-bottom: 0; border-radius: .45em .45em 0 0; background: #1a0f0cdb; }
+    #hanh-le .merit-dock::before { left: 4%; }
+    #hanh-le .merit-dock::after { right: 4%; }
+    #hanh-le .merit-dock__offerings { min-width: 0; display: grid; grid-template-rows: 1.2em minmax(0, 1fr); gap: .3em; }
+    #hanh-le .merit-dock__announcement { display: flex; align-items: center; justify-content: center; gap: .55em; min-width: 0; border-bottom: 1px solid #b58a4240; color: #d7b884; font-size: .61em; white-space: nowrap; }
+    #hanh-le .merit-dock__announcement strong { max-width: 43%; overflow: hidden; color: #f3ddbc; font-size: 1.08em; text-overflow: ellipsis; }
+    #hanh-le .merit-dock__announcement b { color: #c9a875; font-weight: 500; }
+    #hanh-le .merit-dock__announcement i { color: #866744; font-style: normal; }
+    #hanh-le .merit-dock__announcement > span { color: #dfb85f; text-shadow: 0 0 .45em #f2b94d; }
+    #hanh-le .merit-dock__items { min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .36em; }
+    #hanh-le .merit-offering { min-width: 0; display: grid; grid-template-columns: 2.2em minmax(0, 1fr); align-items: center; padding: .22em .3em; border: 1px solid #a77a3b70; border-radius: .32em; background: linear-gradient(145deg, #291711bf, #160d0ae6); box-shadow: inset 0 1px #ffdc9220; }
+    #hanh-le .merit-offering__icon { display: grid; place-items: center; width: 2em; height: 2em; color: #e4bf68; filter: drop-shadow(0 0 .3em #e7a83d80); }
+    #hanh-le .merit-offering__icon svg { width: 100%; height: 100%; }
+    #hanh-le .merit-offering--hoa-sen .merit-offering__icon { border-radius: 50%; background: radial-gradient(ellipse at 50% 60%, #f1c96d80, transparent 62%); }
+    #hanh-le .merit-offering > div { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: .12em; }
+    #hanh-le .merit-offering b { color: #b99a6d; font-size: .5em; font-weight: 500; white-space: nowrap; }
+    #hanh-le .merit-offering strong { overflow: hidden; max-width: 100%; color: #e8d0a6; font-size: .56em; text-overflow: ellipsis; white-space: nowrap; }
+    #hanh-le .merit-dock__ranking { min-width: 0; padding: .1em .38em .18em; border-left: 1px solid #b58a4260; background: #1d110db0; }
+    #hanh-le .merit-dock__title { padding: .24em 0 .34em; border-bottom: 1px solid #b58a423f; color: #d3ad69; font-family: Marcellus, "Be Vietnam Pro", serif; font-size: .59em; letter-spacing: .04em; white-space: nowrap; text-align: center; }
+    #hanh-le .merit-rank { display: grid; grid-template-columns: 1.45em minmax(0, 1fr) auto; align-items: center; gap: .25em; min-height: 1.12em; font-size: .56em; }
+    #hanh-le .merit-rank em { width: 1.18em; height: 1.18em; display: grid; place-items: center; border: 1px solid #c69a4c8c; border-radius: 50%; color: #f1cf83; font-style: normal; font-size: .9em; }
+    #hanh-le .merit-rank span { overflow: hidden; color: #e6d2b0; text-overflow: ellipsis; white-space: nowrap; }
+    #hanh-le .merit-rank b { color: #d9b66f; font-weight: 500; }
+    #hanh-le .merit-rank--empty { grid-template-columns: 1fr; color: #9c8768; }
+    /* THÊM — cánh sen rơi lác đác (cùng keyframe `botanical-fall` của bản gốc). */
+    #hanh-le .hl-mua { position: absolute; inset: 0; z-index: 35; overflow: hidden; pointer-events: none; }
+    #hanh-le .hl-mua img { position: absolute; top: -8%; object-fit: contain; opacity: .9; filter: drop-shadow(0 .2em .28em #160603a8); animation: hl-botanical-fall 11s linear infinite; }
+    /* Hiệu ứng theo bậc (`_hieuUng`), kéo dài đúng lúc vái 6,84 s. Lễ Phật: hào quang
+       sau tượng + cột sáng xuống chỗ vái. Hoa sen: thêm đài sen nở trên đầu người vái. */
+    /* Vòng rỗng giữa ôm quanh đầu tượng (đĩa vàng của ảnh nền ở x 50 %, y ≈ 11 %), không
+       đè lên mặt hay thân tượng. */
+    #hanh-le .hl-hao-quang { position: absolute; z-index: 2; left: 50%; top: 11.5%; width: 58%; aspect-ratio: 1; translate: -50% -50%; mix-blend-mode: screen; animation: hl-hien .7s ease both; transition: opacity .7s ease; }
+    #hanh-le .hl-hao-quang--tat { opacity: 0; }
+    #hanh-le .hl-hao-quang__tia { position: absolute; inset: 0; border-radius: 50%; background: repeating-conic-gradient(from 0deg, #ffe39acc 0deg 4deg, transparent 4deg 15deg); -webkit-mask: radial-gradient(circle, transparent 30%, #000 40%, #000 52%, transparent 70%); mask: radial-gradient(circle, transparent 30%, #000 40%, #000 52%, transparent 70%); animation: hl-xoay 16s linear infinite; }
+    #hanh-le .hl-hao-quang__vong { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, transparent 33%, #fff2c2ee 37%, #ffc95a99 41%, #ff9f2a44 48%, transparent 58%); animation: hl-tho 1.8s ease-in-out infinite alternate; }
+    #hanh-le .hl-cot-sang { position: absolute; z-index: 38; top: 14%; width: 8em; translate: -50% 0; background: linear-gradient(180deg, #ffe7a000, #ffe7a088 30%, #ffd36a66 80%, #ffd36a22); -webkit-mask: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); mask: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); mix-blend-mode: screen; animation: hl-hien-tat 6.84s ease both; }
+    #hanh-le .hl-sen { position: absolute; z-index: 45; width: 9em; height: 9em; translate: -50% -100%; margin-top: calc(-10.5em * var(--hl-co-di, 1)); animation: hl-sen-no 6.84s cubic-bezier(.2, .9, .3, 1.2) both; }
+    #hanh-le .hl-sen__quang { position: absolute; inset: -30%; border-radius: 50%; background: radial-gradient(circle, #fff1c4dd 0%, #ffbf4f88 28%, #ff6fae33 52%, transparent 70%); mix-blend-mode: screen; animation: hl-tho 1.6s ease-in-out infinite alternate; }
+    #hanh-le .hl-sen__khung { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 .8em #ffcf6aaa); animation: hl-xoay 18s linear infinite; }
+    #hanh-le .hl-sen__mat { position: absolute; inset: 29%; display: grid; place-items: center; overflow: hidden; border-radius: 50%; background: radial-gradient(circle, #6a2a12, #2a0d06); color: #ffe3a1; font-weight: 700; font-size: 1.5em; }
+    #hanh-le .hl-sen__mat img { width: 100%; height: 100%; object-fit: cover; }
+    #hanh-le .hl-sen__canh { position: absolute; left: 50%; top: 50%; width: 2.2em; height: 2.2em; margin: -1.1em; object-fit: contain; opacity: 0; animation: hl-canh-bung 2.4s ease-out both; }
+    @keyframes hl-hien { from { opacity: 0; } }
+    @keyframes hl-hien-tat { 0% { opacity: 0; } 12%, 82% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes hl-xoay { to { rotate: 360deg; } }
+    @keyframes hl-tho { from { opacity: .65; scale: .94; } to { opacity: 1; scale: 1.06; } }
+    @keyframes hl-sen-no { 0% { opacity: 0; transform: scale(0) rotate(-90deg); } 14% { opacity: 1; transform: scale(1.08) rotate(6deg); } 20%, 84% { opacity: 1; transform: scale(1) rotate(0); } 100% { opacity: 0; transform: scale(.85) translateY(-1.5em); } }
+    @keyframes hl-canh-bung { 0% { opacity: 0; transform: rotate(var(--goc)) translateY(0) scale(.4); } 20% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--goc)) translateY(-7em) scale(1.1) rotate(200deg); } }
+
+    @keyframes hl-temple-breathe { from { transform: scale(1.015); filter: brightness(.92); } to { transform: scale(1.045); filter: brightness(1.02); } }
+    @keyframes hl-smoke-drift { from { transform: translate(-8%, 6%) scale(.9); } to { transform: translate(8%, -8%) scale(1.15); } }
+    @keyframes hl-dust-rise { 0% { transform: translateY(50vh); opacity: 0; } 25%,70% { opacity: .6; } 100% { transform: translateY(-20vh) translateX(3em); opacity: 0; } }
+    @keyframes hl-bow-frame-1 { 0%,63.99% { opacity: 1; } 64%,95.99% { opacity: 0; } 96%,100% { opacity: 1; } }
+    @keyframes hl-bow-frame-2 { 0%,63.99%,70%,89.99%,96%,100% { opacity: 0; } 64%,69.99%,90%,95.99% { opacity: 1; } }
+    @keyframes hl-bow-frame-3 { 0%,69.99%,76%,83.99%,90%,100% { opacity: 0; } 70%,75.99%,84%,89.99% { opacity: 1; } }
+    @keyframes hl-bow-frame-4 { 0%,75.99%,84%,100% { opacity: 0; } 76%,83.99% { opacity: 1; } }
+    @keyframes hl-dung-vai { 0%,5.84% { opacity: 1; } 5.85%,92.68% { opacity: 0; } 92.69%,100% { opacity: 1; } }
+    @keyframes hl-vai-hien { 0%,5.84% { opacity: 0; } 5.85%,92.68% { opacity: 1; } 92.69%,100% { opacity: 0; } }
+    @keyframes hl-vai-1 { 0%,8.32%,91.68%,100% { opacity: 1; } 8.33%,91.67% { opacity: 0; } }
+    @keyframes hl-vai-2 { 0%,8.32%,25.01%,100% { opacity: 0; } 8.33%,25% { opacity: 1; } }
+    @keyframes hl-vai-3 { 0%,25%,41.68%,100% { opacity: 0; } 25.01%,41.67% { opacity: 1; } }
+    @keyframes hl-vai-4 { 0%,41.67%,58.34%,100% { opacity: 0; } 41.68%,58.33% { opacity: 1; } }
+    @keyframes hl-vai-5 { 0%,58.33%,75.01%,100% { opacity: 0; } 58.34%,75% { opacity: 1; } }
+    @keyframes hl-vai-6 { 0%,75%,91.68%,100% { opacity: 0; } 75.01%,91.67% { opacity: 1; } }
+    @keyframes hl-bong-in { from { opacity: 0; translate: -50% -80%; } to { opacity: 1; translate: -50% -100%; } }
+    @keyframes hl-botanical-fall {
+      0% { transform: translate3d(0, -8vh, 0) rotate(var(--start-rotation)) scale(.72); opacity: 0; }
+      8% { opacity: .9; }
+      45% { transform: translate3d(calc(var(--fall-drift) * -.45), 48vh, 0) rotate(calc(var(--start-rotation) + 170deg)) scale(.9); }
+      100% { transform: translate3d(var(--fall-drift), 116vh, 0) rotate(var(--end-rotation)) scale(1); opacity: .14; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="man"></canvas>
+
+  <!-- Mode Hành lễ — dựng bằng HTML như game gốc, xem src/chuaOnline/hanhLeDom.js. -->
+  <div id="hanh-le" hidden></div>
+
+  <div id="live-wait">Bình luận “Bình an” để thắp sáng đài sen</div>
+
+  <div id="session-notice" hidden>
+    <div class="notice-title" id="notice-title"></div>
+  </div>
+
+  <!-- Nạp bản ĐÃ GÓI. Sinh lại bằng `npm run goi` sau mỗi lần sửa `src/chuaOnline/`. -->
+  <script type="module" src="./san/chua-online.js?v=0eeee659"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"1d5294dd4b3e49718d327fe3f3a195f0","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

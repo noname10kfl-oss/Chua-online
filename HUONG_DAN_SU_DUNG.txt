@@ -1,0 +1,48 @@
+========================================================================
+           HƯỚNG DẪN SỬ DỤNG HỆ THỐNG LIVESTREAM CHÙA ONLINE
+========================================================================
+
+1. CÁCH KHỞI ĐỘNG (1 CLICK):
+------------------------------------------------------------------------
+- Bước 1: Chuột phải vào file zip ChuaOnline_Full_1Click.zip -> Chọn "Extract All..." (hoặc Giải nén).
+- Bước 2: Mở thư mục đã giải nén, nhấp đúp chuột vào file:
+      CHAY_NGAY.bat
+- Bước 3: Nhập Key bản quyền khi phần mềm yêu cầu:
+      Key: Hao123   (Chú ý viết đúng chữ H hoa)
+- Sau khi nhập đúng, hệ thống sẽ tự động bật 2 trang trên trình duyệt:
+    + Bảng điều khiển: http://localhost:3000/admin
+    + Màn hình Game:   http://localhost:3000/index.html?demo=1&relay=8080&mode=hanh-le
+
+
+2. CÁCH KẾT NỐI KÊNH TIKTOK LIVE:
+------------------------------------------------------------------------
+- Bước 1: Vào trang Bảng điều khiển (http://localhost:3000/admin).
+- Bước 2: Tại mục 1 "Kết Nối TikTok Live", gõ tên TikTok của kênh đang phát sóng.
+  Ví dụ: @tuananh_live (hoặc tuananh_live).
+- Bước 3: Bấm nút "🚀 Kết Nối Ngay".
+- Hệ thống sẽ tự động quét và kết nối:
+  + Tự động đọc tên người vào xem, người bình luận bằng giọng AI.
+  + Tự động hiển thị người vái lạy, thắp hương, dâng hoa sen khi có quà tặng.
+  + Thả tim và tích điểm công đức thời gian thực.
+
+
+3. CÁCH ĐƯA LÊN PHẦN MỀM LIVESTREAM (OBS Studio / TikTok Live Studio):
+------------------------------------------------------------------------
+- Trong OBS Studio, bấm thêm nguồn: "Browser" (Trình duyệt).
+- Điền URL:
+      http://localhost:3000/index.html?demo=1&relay=8080&mode=hanh-le
+- Chiều rộng (Width): 1080
+- Chiều cao (Height): 1920 (nếu live dọc điện thoại) hoặc 1920 x 1080 (live ngang).
+- Tích chọn: "Control audio via OBS" (Điều khiển âm thanh qua OBS).
+
+
+4. TÍNH NĂNG RESET & ĐỔI CHẾ ĐỘ:
+------------------------------------------------------------------------
+- Nút "🔄 Reset Tất Cả Phật Tử": Trên trang Admin, bấm nút này để làm mới toàn bộ màn hình Game về trạng thái ban đầu sạch sẽ.
+- Chuyển đổi Mode: Có 2 chế độ:
+    + Chế độ Hành Lễ: Chánh điện vái lạy trang nghiêm.
+    + Chế độ Vườn Sen: Đài sen toạ thiền thanh tịnh.
+
+========================================================================
+CHÚC BẠN CÓ NHỮNG PHIÊN LIVESTREAM ĐÔNG KHÁCH VÀ THÀNH CÔNG RỰC RỠ!
+========================================================================
