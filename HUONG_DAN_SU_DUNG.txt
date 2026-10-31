@@ -2,47 +2,83 @@
            HƯỚNG DẪN SỬ DỤNG HỆ THỐNG LIVESTREAM CHÙA ONLINE
 ========================================================================
 
-1. CÁCH KHỞI ĐỘNG (1 CLICK):
+1. KHỞI ĐỘNG (1 CLICK, KHÔNG CẦN NHẬP KEY):
 ------------------------------------------------------------------------
-- Bước 1: Chuột phải vào file zip ChuaOnline_Full_1Click.zip -> Chọn "Extract All..." (hoặc Giải nén).
-- Bước 2: Mở thư mục đã giải nén, nhấp đúp chuột vào file:
-      CHAY_NGAY.bat
-- Bước 3: Nhập Key bản quyền khi phần mềm yêu cầu:
-      Key: Hao123   (Chú ý viết đúng chữ H hoa)
-- Sau khi nhập đúng, hệ thống sẽ tự động bật 2 trang trên trình duyệt:
-    + Bảng điều khiển: http://localhost:3000/admin
-    + Màn hình Game:   http://localhost:3000/index.html?demo=1&relay=8080&mode=hanh-le
+- Giải nén toàn bộ file zip, rồi nhấp đúp vào CHAY_NGAY.bat
+- Lần đầu: tool tự cài thư viện đọc Live TikTok (cần Python + internet).
+- Mở trang điều khiển: http://localhost:3000/admin
+- Màn hình Game (cho OBS):
+    http://localhost:3000/index.html?demo=1&relay=8080&mode=hanh-le
 
 
-2. CÁCH KẾT NỐI KÊNH TIKTOK LIVE:
+2. CHẾ ĐỘ TỰ ĐỘNG:
 ------------------------------------------------------------------------
-- Bước 1: Vào trang Bảng điều khiển (http://localhost:3000/admin).
-- Bước 2: Tại mục 1 "Kết Nối TikTok Live", gõ tên TikTok của kênh đang phát sóng.
-  Ví dụ: @tuananh_live (hoặc tuananh_live).
-- Bước 3: Bấm nút "🚀 Kết Nối Ngay".
-- Hệ thống sẽ tự động quét và kết nối:
-  + Tự động đọc tên người vào xem, người bình luận bằng giọng AI.
-  + Tự động hiển thị người vái lạy, thắp hương, dâng hoa sen khi có quà tặng.
-  + Thả tim và tích điểm công đức thời gian thực.
+- Vào /admin, nhập tên TikTok (vd: @tuananh_live), bấm "Kết Nối Ngay".
+- Tên kênh được LƯU LẠI. Từ lần sau chỉ cần bấm CHAY_NGAY.bat, tool sẽ:
+    + Tự kết nối kênh đã lưu.
+    + Nếu streamer chưa lên sóng: tự canh mỗi 15 giây, lên sóng là vào ngay.
+    + Nếu mất kết nối / hết phiên live: tự kết nối lại.
+    + Nếu bridge Python bị sập: tự khởi động lại (3s, 6s, ... tối đa 30s).
+    + Mỗi 7 ngày tự cập nhật thư viện TikTokLive (TikTok hay đổi giao thức).
+- Tắt tính năng này: bỏ tích ô "Tự động kết nối lại..." trong /admin rồi Lưu.
 
 
-3. CÁCH ĐƯA LÊN PHẦN MỀM LIVESTREAM (OBS Studio / TikTok Live Studio):
+3. NẾU KẾT NỐI TIKTOK BỊ LỖI:
 ------------------------------------------------------------------------
-- Trong OBS Studio, bấm thêm nguồn: "Browser" (Trình duyệt).
-- Điền URL:
+- Xem cửa sổ đen (console): lỗi được in rõ kèm gợi ý, và hiện trên /admin.
+- Lỗi "giới hạn tốc độ / rate limit": nhập EulerStream API Key trong /admin
+  (mục "Tự Động & Cấu Hình Kết Nối") rồi Lưu.
+- Live giới hạn độ tuổi: nhập TikTok Session ID trong /admin.
+- Lỗi lặp lại: chạy tay  python -m pip install --upgrade TikTokLive
+- Không thấy Python: cài từ python.org, tích "Add python.exe to PATH".
+
+
+4. ĐƯA LÊN OBS STUDIO / TIKTOK LIVE STUDIO:
+------------------------------------------------------------------------
+- Thêm nguồn "Browser", URL:
       http://localhost:3000/index.html?demo=1&relay=8080&mode=hanh-le
-- Chiều rộng (Width): 1080
-- Chiều cao (Height): 1920 (nếu live dọc điện thoại) hoặc 1920 x 1080 (live ngang).
-- Tích chọn: "Control audio via OBS" (Điều khiển âm thanh qua OBS).
+- Width 1080, Height 1920 (live dọc) hoặc 1920 x 1080 (live ngang).
+- Tích "Control audio via OBS".
 
 
-4. TÍNH NĂNG RESET & ĐỔI CHẾ ĐỘ:
+5. KIỂM DUYỆT BÌNH LUẬN (trang /admin, mục "Kiểm Duyệt Bình Luận"):
 ------------------------------------------------------------------------
-- Nút "🔄 Reset Tất Cả Phật Tử": Trên trang Admin, bấm nút này để làm mới toàn bộ màn hình Game về trạng thái ban đầu sạch sẽ.
-- Chuyển đổi Mode: Có 2 chế độ:
-    + Chế độ Hành Lễ: Chánh điện vái lạy trang nghiêm.
-    + Chế độ Vườn Sen: Đài sen toạ thiền thanh tịnh.
+- Bình luận được lọc TRƯỚC khi hiện lên màn hình và đọc bằng giọng AI:
+    + Chặn từ/cụm từ cấm (mỗi dòng một mục, sửa thoải mái rồi bấm Lưu).
+    + Chặn link, tên miền, số điện thoại.
+    + Giới hạn: mỗi người cách nhau 3 giây, tối đa 3 bình luận/giây,
+      bỏ bình luận y hệt, cắt bình luận quá dài, gộp chữ lặp ("aaaaaa").
+- Tên khán giả chứa từ cấm hoặc link sẽ được đổi thành "Phật tử".
+- Lưu ý: từ cấm khớp theo đúng cách viết (có dấu thì cấm đúng chữ có dấu).
+  Thêm cả dạng không dấu nếu cần, vd: "dit me".
+- Cài đặt lưu trong moderation.json.
 
-========================================================================
-CHÚC BẠN CÓ NHỮNG PHIÊN LIVESTREAM ĐÔNG KHÁCH VÀ THÀNH CÔNG RỰC RỠ!
+
+6. BẢNG CÔNG ĐỨC:
+------------------------------------------------------------------------
+- Điểm tính từ quà, tim, bình luận THẬT của khán giả:
+    1 xu = 10 điểm, 1 tim = 1 điểm, 1 bình luận = 2 điểm.
+- Lưu vào merit_data.json (không mất khi tắt tool). Xoá điểm ở trang /admin.
+- Đưa bảng lên OBS: thêm nguồn "Browser", URL:
+      http://localhost:3000/leaderboard.html?top=5
+  (top = số người hiển thị 1-10, refresh = giây giữa các lần cập nhật.)
+  Kích thước gợi ý: Width 470, Height 430. Nền trong suốt.
+- Đây là bảng riêng của server; số điểm hiển thị bên trong màn hình game
+  vẫn do game tự tính và sẽ về 0 khi tải lại trang.
+
+
+7. BẢO MẬT:
+------------------------------------------------------------------------
+- Server chỉ nghe trên máy này (127.0.0.1). Trang web lạ không thể gửi
+  lệnh vào tool (có kiểm tra Origin/Host), và chỉ bridge TikTok của chính
+  tool (có token ngẫu nhiên mỗi lần chạy) mới được đẩy sự kiện vào game.
+- Đặt mật khẩu cho trang /admin: nhập ở mục "Tự Động & Cấu Hình Kết Nối"
+  (từ 6 ký tự) rồi Lưu. Trình duyệt sẽ hỏi mật khẩu (tên đăng nhập gõ gì
+  cũng được). Màn hình game và bảng công đức cho OBS KHÔNG bị khoá.
+- Quên mật khẩu: mở connector_config.json, xoá giá trị của
+  "adminPasswordHash" (để thành ""), hoặc đặt biến môi trường ADMIN_PASSWORD.
+- Muốn máy khác trong mạng LAN truy cập: đặt biến môi trường HOST=0.0.0.0
+  (nên đặt mật khẩu admin trước).
+- connector_config.json và merit_data.json chứa thông tin riêng tư:
+  KHÔNG đưa lên GitHub / gửi cho người khác.
 ========================================================================

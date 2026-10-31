@@ -1,0 +1,6 @@
+node_modules/
+bin/
+connector_config.json
+merit_data.json
+.tiktoklive_update
+chua_clone/assets/cache_voice/

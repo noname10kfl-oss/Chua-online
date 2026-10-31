@@ -1,16 +1,13 @@
 const fs = require("fs");
 const path = require("path");
-const { execSync, spawn } = require("child_process");
-const readline = require("readline");
+const { execSync } = require("child_process");
 
 // Thiết lập mã hóa UTF-8 cho console
 if (process.platform === "win32") {
   try {
     execSync("chcp 65001", { stdio: "ignore" });
-  } catch(e) {}
+  } catch (e) {}
 }
-
-const REQUIRED_KEY = "Hao123";
 
 // Kiểm tra xem file có bị chạy trực tiếp từ trong file nén không
 if (!fs.existsSync(path.join(__dirname, "server.js"))) {
@@ -25,130 +22,154 @@ if (!fs.existsSync(path.join(__dirname, "server.js"))) {
   process.exit(1);
 }
 
-function promptAuth() {
-  console.clear();
-  console.log("===================================================================");
-  console.log("             🏯 HỆ THỐNG LIVESTREAM CHÙA ONLINE TỰ ĐỘNG 🏯");
-  console.log("===================================================================");
-  console.log("");
-  console.log("  [!] Phần mềm yêu cầu Mã Kích Hoạt để sử dụng.");
-  console.log("  [!] Vui lòng nhập đúng chữ hoa / chữ thường (Key: Hao123).");
-  console.log("");
+const CONFIG_FILE = path.join(__dirname, "connector_config.json");
+const UPDATE_STAMP = path.join(__dirname, ".tiktoklive_update");
+const UPDATE_EVERY_MS = 7 * 24 * 60 * 60 * 1000; // 7 ngày
 
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  rl.question("👉 Nhập Key Bản Quyền: ", (inputKey) => {
-    rl.close();
-    if (inputKey.trim() === REQUIRED_KEY) {
-      console.clear();
-      console.log("===================================================================");
-      console.log("             ✅ XÁC THỰC THÀNH CÔNG - CHÀO MỪNG BẠN!");
-      console.log("===================================================================\n");
-      startSystem();
-    } else {
-      console.log("\n❌ SAI MÃ KEY! BẠN KHÔNG CÓ QUYỀN TRUY CẬP VÀO TOOL NÀY.");
-      console.log("Vui lòng kiểm tra lại (chú ý chữ H viết hoa).\n");
-      const waitRl = readline.createInterface({ input: process.stdin, output: process.stdout });
-      waitRl.question("Bấm Enter để thử lại...", () => {
-        waitRl.close();
-        promptAuth();
-      });
-    }
-  });
+function readSettings() {
+  try {
+    return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"));
+  } catch (e) {
+    return {};
+  }
 }
 
+// Chỉ giải phóng tiến trình đang LẮNG NGHE (LISTENING) ở cổng 3000/8080 trên máy này.
+// (Bản cũ khớp cả cổng đích của kết nối ra ngoài nên có thể tắt nhầm trình duyệt/ứng dụng khác.)
 function freePorts() {
   console.log("[1/3] Đang làm sạch cổng mạng (3000, 8080)...");
+  if (process.platform !== "win32") return;
   try {
-    const output = execSync("netstat -aon", { encoding: "utf-8" });
+    const output = execSync("netstat -aon -p TCP", { encoding: "utf-8" });
     const pids = new Set();
     for (const line of output.split(/\r?\n/)) {
-      if (line.includes(":3000 ") || line.includes(":8080 ")) {
-        const parts = line.trim().split(/\s+/);
-        const pid = parts[parts.length - 1];
-        if (pid && !isNaN(pid) && pid !== "0" && pid !== String(process.pid)) {
-          pids.add(pid);
-        }
-      }
+      const parts = line.trim().split(/\s+/);
+      if (parts.length < 5 || parts[0] !== "TCP") continue;
+      const local = parts[1];
+      const state = parts[3];
+      const pid = parts[4];
+      if (state !== "LISTENING") continue;
+      if (!/:(3000|8080)$/.test(local)) continue;
+      if (pid && /^\d+$/.test(pid) && pid !== "0" && pid !== String(process.pid)) pids.add(pid);
     }
     for (const pid of pids) {
       try {
         execSync(`taskkill /F /PID ${pid}`, { stdio: "ignore" });
-      } catch(e) {}
+      } catch (e) {}
     }
-  } catch(e) {}
+  } catch (e) {}
+}
+
+function canRun(cmd, args) {
+  try {
+    execSync(`"${cmd}" ${args}`, { stdio: "ignore" });
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 function checkPython() {
   console.log("[2/3] Đang kiểm tra hệ thống đọc Live TikTok...");
   let pythonCmd = null;
 
-  const candidates = [
-    "python",
-    "py",
-    "C:\\Python314\\python.exe",
-    "C:\\Python313\\python.exe",
-    "C:\\Python312\\python.exe"
-  ];
-  if (process.env.LOCALAPPDATA) {
-    for (const ver of ["Python314", "Python313", "Python312", "Python311", "Python310"]) {
-      candidates.push(path.join(process.env.LOCALAPPDATA, "Programs", "Python", ver, "python.exe"));
+  const candidates = ["py", "python", "python3"];
+  for (const v of ["Python314", "Python313", "Python312", "Python311", "Python310"]) {
+    candidates.push(`C:\\${v}\\python.exe`);
+    if (process.env.LOCALAPPDATA) {
+      candidates.push(path.join(process.env.LOCALAPPDATA, "Programs", "Python", v, "python.exe"));
     }
   }
 
   for (const cmd of candidates) {
-    try {
-      execSync(`"${cmd}" --version`, { stdio: "ignore" });
+    if (canRun(cmd, "--version")) {
       pythonCmd = cmd;
       break;
-    } catch(e) {}
+    }
   }
 
-  if (pythonCmd) {
+  if (!pythonCmd) {
+    console.log("    -> Lưu ý: Máy chưa cài Python. Để đọc Live TikTok thật, hãy cài Python tại python.org");
+    console.log("       (nhớ tích chọn 'Add python.exe to PATH') rồi chạy lại.");
+    return;
+  }
+
+  process.env.PYTHON_CMD = pythonCmd; // server.js dùng đúng lệnh này để chạy bridge
+
+  const hasLibs = canRun(pythonCmd, '-c "import TikTokLive, websockets"');
+  if (!hasLibs) {
+    console.log("    -> Đang tự động nạp thư viện đọc Live TikTok (chỉ tải lần đầu)...");
     try {
-      execSync(`"${pythonCmd}" -c "import TikTokLive, websockets"`, { stdio: "ignore" });
-    } catch(e) {
-      console.log("    -> Đang tự động nạp thư viện đọc Live TikTok (chỉ tải lần đầu)...");
-      try {
-        execSync(`"${pythonCmd}" -m pip install TikTokLive websockets`, { stdio: "inherit" });
-      } catch(err) {
-        console.log("    -> Không thể tự tải thư viện TikTokLive qua pip. Nếu cần đọc Live thật hãy chạy: pip install TikTokLive websockets");
-      }
+      execSync(`"${pythonCmd}" -m pip install --upgrade TikTokLive websockets`, { stdio: "inherit" });
+    } catch (err) {
+      console.log("    -> Không thể tự tải thư viện qua pip. Hãy chạy tay lệnh:");
+      console.log(`       "${pythonCmd}" -m pip install --upgrade TikTokLive websockets`);
     }
-  } else {
-    console.log("    -> Lưu ý: Máy chưa cài Python. Khi cần đọc Live TikTok thật, vui lòng cài Python tại python.org.");
+    touchStamp();
+    return;
+  }
+
+  // TikTok hay đổi giao thức -> mỗi 7 ngày tự cập nhật thư viện (bỏ qua nếu mất mạng)
+  let stale = true;
+  try {
+    stale = Date.now() - fs.statSync(UPDATE_STAMP).mtimeMs > UPDATE_EVERY_MS;
+  } catch (e) {}
+  if (stale) {
+    console.log("    -> Đang kiểm tra bản cập nhật thư viện TikTokLive (mỗi 7 ngày 1 lần)...");
+    try {
+      execSync(`"${pythonCmd}" -m pip install --upgrade TikTokLive websockets`, { stdio: "inherit", timeout: 120000 });
+    } catch (err) {
+      console.log("    -> Không cập nhật được (có thể mất mạng). Dùng bản hiện tại.");
+    }
+    touchStamp();
   }
 }
 
-function openBrowser() {
-  console.log("[3/3] Đang mở giao diện Game và Bảng Điều Khiển...");
+function touchStamp() {
+  try {
+    fs.writeFileSync(UPDATE_STAMP, String(Date.now()));
+  } catch (e) {}
+}
+
+function openBrowser(hasSavedChannel) {
+  console.log("[3/3] Đang mở giao diện...");
   setTimeout(() => {
-    try {
-      const startCmd = process.platform === "win32" ? "start" : "xdg-open";
-      execSync(`${startCmd} http://localhost:3000/admin`, { stdio: "ignore", shell: true });
-      execSync(`${startCmd} "http://localhost:3000/index.html?demo=1&relay=8080&mode=hanh-le"`, { stdio: "ignore", shell: true });
-    } catch(e) {}
+    const open = (url) => {
+      try {
+        if (process.platform === "win32") {
+          // Chú ý: tham số "" là tiêu đề cửa sổ, nếu thiếu thì URL trong ngoặc kép bị hiểu nhầm là tiêu đề
+          execSync(`start "" "${url}"`, { stdio: "ignore", shell: true });
+        } else {
+          execSync(`xdg-open "${url}"`, { stdio: "ignore", shell: true });
+        }
+      } catch (e) {}
+    };
+    // Chưa có kênh đã lưu thì mở trang điều khiển để nhập tên TikTok
+    if (!hasSavedChannel) open("http://localhost:3000/admin");
+    open("http://localhost:3000/index.html?demo=1&relay=8080&mode=hanh-le");
   }, 2000);
 }
 
 function startSystem() {
+  const settings = readSettings();
+  const hasSavedChannel = !!(settings.username && settings.autoConnect !== false);
+
   freePorts();
   checkPython();
-  openBrowser();
+  openBrowser(hasSavedChannel);
 
   console.log("\n===================================================================");
   console.log("  🏯 CHÙA ONLINE ĐÃ SẴN SÀNG HOẠT ĐỘNG!");
   console.log("  -----------------------------------------------------------------");
   console.log("  • Bảng điều khiển: http://localhost:3000/admin");
   console.log("  • Màn hình Game:   http://localhost:3000/index.html?demo=1&relay=8080&mode=hanh-le");
+  if (hasSavedChannel) {
+    console.log(`  • Tự động kết nối kênh đã lưu: @${settings.username}`);
+  }
   console.log("  (HÃY ĐỂ CỬA SỔ NÀY MỞ TRONG SUỐT QUÁ TRÌNH LIVESTREAM)");
   console.log("===================================================================\n");
 
-  process.env.APP_KEY = REQUIRED_KEY;
   require("./server.js");
 }
 
-promptAuth();
+startSystem();

@@ -1,4 +1,7 @@
 {
-  "apiKey": "eafe30c04e487172e296fa4b8206999a09a584e25223157ec0099696f68ee653",
-  "sessionId": ""
+  "apiKey": "",
+  "sessionId": "",
+  "username": "tinhtamgiacngoonline",
+  "autoConnect": true,
+  "adminPasswordHash": ""
 }
